@@ -94,10 +94,11 @@ List all non-countries.
 ##all records with a NULL region
 run_sql_and_return_html(cnx,"""
 select 
-    * 
+    `Short Name`
 from 
     world_bank_data.wdi_country
-where world_bank_data.wdi_country.Region is NULL
+where 
+    world_bank_data.wdi_country.Region is NULL
 
 """)
 ```
@@ -305,7 +306,7 @@ ORDER BY
 
 run_sql_and_return_html(cnx,"""
 SELECT
-    `Short Name`, `Income Group`
+    `Short Name`, `Country Code`, `Income Group`
 FROM
     WDI_country
 WHERE
@@ -339,7 +340,7 @@ execute_ddl(cnx,"""
 
 run_sql_and_return_html(cnx,"""
 SELECT
-    `Short Name`, `Income Group`
+    `Short Name`, `Country Code`, `Income Group`
 FROM
     WDI_country
 WHERE
@@ -484,9 +485,9 @@ WITH all_combinations AS (
         r.Region, 
         i.`Income Group`
     FROM 
-        (SELECT DISTINCT Region FROM WDI_country) r
+        (SELECT DISTINCT Region FROM WDI_country WHERE Region IS NOT NULL) r
     CROSS JOIN 
-        (SELECT DISTINCT `Income Group` FROM WDI_country) i
+        (SELECT DISTINCT `Income Group` FROM WDI_country WHERE `Income Group` IS NOT NULL) i
 ),
 actual_combinations AS (
     SELECT 
@@ -501,7 +502,8 @@ actual_combinations AS (
 )
 SELECT 
     ac.Region, 
-    ac.`Income Group`
+    ac.`Income Group`,
+    0 AS Number_of_Countries
 FROM 
     all_combinations ac
 LEFT JOIN 
@@ -511,6 +513,7 @@ WHERE
     act.Region IS NULL
 ORDER BY 
     ac.Region, ac.`Income Group`;
+
 """)
 
 ```
@@ -654,7 +657,7 @@ SELECT
     it.`Income Group`,
     it.country_count,
     tc.total,
-    ROUND((it.country_count / tc.total) * 100, 2) AS percent_of_total
+    ROUND((it.country_count / tc.total) * 100, 1) AS percent_of_total
 FROM
     income_totals it
 CROSS JOIN
